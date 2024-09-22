@@ -434,22 +434,40 @@ extension CocoaMQTTWebSocket.StarscreamConnection: SSLTrustValidator {
     }
 }
 
-extension CocoaMQTTWebSocket.StarscreamConnection: WebSocketDelegate {
+extension CocoaMQTTWebSocket.StarscreamConnection: Starscream.WebSocketDelegate {
 
-    public func websocketDidConnect(socket: WebSocketClient) {
-        delegate?.connectionOpened(self)
-    }
-
-    public func websocketDidDisconnect(socket: WebSocketClient, error: Error?) {
-        delegate?.connectionClosed(self, withError: error)
-    }
-
-    public func websocketDidReceiveMessage(socket: WebSocketClient, text: String) {
-        delegate?.connection(self, receivedString: text)
-    }
-
-    public func websocketDidReceiveData(socket: WebSocketClient, data: Data) {
-        delegate?.connection(self, receivedData: data)
+    public func didReceive(event: Starscream.WebSocketEvent, client: any Starscream.WebSocketClient) {
+        switch event {
+        case .connected(_):
+            delegate?.connectionOpened(self)
+            break
+        case .disconnected(_, let code):
+            delegate?.connectionClosed(self, withError: nil, withCode: code)
+            break
+        case .text(let string):
+            delegate?.connection(self, receivedString: string)
+            break
+        case .binary(let data):
+            delegate?.connection(self, receivedData: data)
+            break
+        case .ping(_):
+            break
+        case .pong(_):
+            break
+        case .viabilityChanged(_):
+            break
+        case .reconnectSuggested(_):
+            break
+        case .cancelled:
+            delegate?.connectionClosed(self, withError: nil, withCode: nil)
+            break
+        case .error(let error):
+            delegate?.connectionClosed(self, withError: error, withCode: nil)
+            break
+        case .peerClosed:
+            delegate?.connectionClosed(self, withError: nil, withCode: nil)
+            break
+        }
     }
 }
 
